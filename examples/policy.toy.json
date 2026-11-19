@@ -1,0 +1,11 @@
+{
+  "schema": 1,
+  "frozen": [
+    {
+      "path": "calc.py",
+      "symbols": ["add"],
+      "ref": "toy acceptance: add is the frozen baseline function",
+      "note": "Change only with a task-bound frozen-change decision."
+    }
+  ]
+}

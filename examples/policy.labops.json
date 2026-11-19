@@ -1,0 +1,7 @@
+{
+  "schema": 1,
+  "frozen": [
+    {"path": "src/labops/journal.py", "symbols": null, "ref": "D-20261019-4", "note": "M0a op journal + CAS; changes need a decision ID"},
+    {"path": "src/labops/statemachine.py", "symbols": null, "ref": "D-20261019-2", "note": "state machine; changes need a decision ID"}
+  ]
+}

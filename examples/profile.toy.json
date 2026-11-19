@@ -1,0 +1,18 @@
+{
+  "schema": 1,
+  "commands": [
+    {
+      "name": "unit",
+      "argv": ["{python}", "-m", "unittest", "discover", "-s", "tests", "-t", "."],
+      "cwd": ".",
+      "timeout_s": 600,
+      "env": {
+        "PYTHONPATH": "src",
+        "PYTHONHASHSEED": "0"
+      }
+    }
+  ],
+  "requires_gpu": false,
+  "allowed_paths": ["calc.py", "tests/**"],
+  "max_log_bytes": 10485760
+}

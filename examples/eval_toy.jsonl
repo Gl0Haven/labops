@@ -1,0 +1,12 @@
+{"id":"two_char_encoding","query":"编码","expected":[{"repo_id":"toy","ref":"D-20261020-1"}],"tags":["two_char"]}
+{"id":"two_char_cache","query":"缓存","expected":[{"repo_id":"toy","ref":"D-20261020-2"}],"tags":["two_char"]}
+{"id":"abbr_kv","query":"KV","expected":[{"repo_id":"toy","ref":"D-20261020-3"}],"tags":["abbr"]}
+{"id":"abbr_ttl","query":"TTL","expected":[{"repo_id":"toy","ref":"D-20261020-4"}],"tags":["abbr"]}
+{"id":"exact_decision","query":"D-20261020-3","expected":[{"repo_id":"toy","ref":"D-20261020-3"}],"tags":["exact_id"]}
+{"id":"multi_hop","query":"位置编码 KV","expected":[{"repo_id":"toy","ref":"D-20261020-1"},{"repo_id":"toy","ref":"D-20261020-3"}],"tags":["multi_hop","two_char","abbr"]}
+{"id":"error_fallback","query":"错误回退","expected":[{"repo_id":"toy","ref":"D-20261020-5"}],"tags":["two_char"]}
+{"id":"retrieval_eval","query":"评测工具","expected":[{"repo_id":"toy","ref":"D-20261020-6"}],"tags":["two_char"]}
+{"id":"index_update","query":"索引更新","expected":[{"repo_id":"toy","ref":"D-20261020-7"}],"tags":["two_char"]}
+{"id":"security_boundary","query":"保密仓库","expected":[{"repo_id":"toy","ref":"D-20261020-8"}],"tags":["two_char"]}
+{"id":"superseding_cache","query":"缓存 取代","expected":[{"repo_id":"toy","ref":"D-20261020-9"}],"tags":["superseded_filter"]}
+{"id":"exact_task","query":"T20261020-m2-smoke","expected":[{"repo_id":"toy","ref":"T20261020-m2-smoke"}],"tags":["exact_id"]}

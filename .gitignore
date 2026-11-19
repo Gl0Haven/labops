@@ -1,0 +1,17 @@
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+build/
+dist/
+.labops/
+*.db
+*.db-wal
+*.db-shm
+*.log
+.env
+.env.*
+
+# Maintainer-only privacy patterns for tests/test_public.py
+tests/private_patterns.local.txt

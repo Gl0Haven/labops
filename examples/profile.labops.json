@@ -1,0 +1,9 @@
+{
+  "schema": 1,
+  "commands": [
+    {"name": "unit", "argv": ["{python}", "-m", "unittest", "discover", "-s", "tests", "-t", "."], "cwd": ".", "timeout_s": 1800, "env": {"PYTHONHASHSEED": "0"}}
+  ],
+  "requires_gpu": false,
+  "allowed_paths": ["src/**", "tests/**", "scripts/**", "examples/**", "README.md", "README.zh-CN.md", "LICENSE", ".gitignore", ".github/**", "pyproject.toml", "labops.cmd", "requirements*.txt", "requirements-mcp.txt", ".ai-bridge/**"],
+  "max_log_bytes": 10485760
+}
