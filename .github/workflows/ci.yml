@@ -38,7 +38,9 @@
           "run": "python -m unittest discover -s tests -t .",
           "env": {
             "PYTHONPATH": "src",
-            "PYTHONUTF8": "1"
+            "PYTHONUTF8": "1",
+            "TEMP": "${{ runner.temp }}",
+            "TMP": "${{ runner.temp }}"
           }
         }
       ]
