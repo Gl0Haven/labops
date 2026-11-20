@@ -59,6 +59,22 @@ def _path_is_within(path: Path, root: Path) -> bool:
         return False
 
 
+def _long_path(path: Path) -> Path:
+    """Expand Windows 8.3 short names (RUNNER~1) without following links.
+
+    resolve() expands short names but also follows reparse points, which the entrypoint check must
+    see first; GetLongPathNameW only rewrites the name components. Returns the input unchanged off
+    Windows or when the path does not exist.
+    """
+    if os.name != "nt":
+        return path
+    import ctypes
+
+    buffer = ctypes.create_unicode_buffer(32768)
+    length = ctypes.windll.kernel32.GetLongPathNameW(str(path), buffer, len(buffer))
+    return Path(buffer.value) if 0 < length < len(buffer) else path
+
+
 def _is_reparse(path: Path) -> bool:
     return path.is_symlink() or getattr(os.path, "isjunction", lambda _path: False)(str(path))
 
@@ -227,7 +243,7 @@ def _validate_entrypoint(conn: sqlite3.Connection, repo_id: str, entrypoint: str
         raise ValidationError("queue_entrypoint_must_be_absolute_ps1", detail={"entrypoint": entrypoint})
     repo = repo_row(conn, repo_id)
     repo_path = Path(repo["path"]).resolve()
-    raw_candidate = Path(os.path.abspath(str(candidate)))
+    raw_candidate = _long_path(Path(os.path.abspath(str(candidate))))
     if not _path_is_within(raw_candidate, repo_path):
         raise ValidationError("queue_entrypoint_outside_repo", detail={"entrypoint": entrypoint})
     if _contains_reparse(raw_candidate, repo_path):

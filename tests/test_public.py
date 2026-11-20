@@ -62,6 +62,26 @@ class PublicTests(unittest.TestCase):
         self.assertEqual(Path(resolved), self.entry.resolve())
         self.assertEqual(len(digest), 64)
 
+    @unittest.skipUnless(os.name == "nt", "Windows 8.3 short names")
+    def test_entrypoint_given_as_short_path_stays_inside_repo(self):
+        # GitHub's Windows runners hand out temp dirs as C:\Users\RUNNER~1\...; the repo path was
+        # resolved to the long form while the entrypoint kept the short one, so every queue
+        # registration failed with queue_entrypoint_outside_repo.
+        import ctypes
+
+        long_repo = self.root / "LongRepositoryName12345"
+        (long_repo / "scripts").mkdir(parents=True)
+        entry = long_repo / "scripts" / "run.ps1"
+        entry.write_text("exit 0\n", encoding="utf-8")
+        buffer = ctypes.create_unicode_buffer(32768)
+        ctypes.windll.kernel32.GetShortPathNameW(str(long_repo), buffer, len(buffer))
+        short_repo = Path(buffer.value)
+        if str(short_repo).casefold() == str(long_repo).casefold():
+            self.skipTest("8.3 names are disabled on this volume")
+        self.conn.execute("INSERT INTO repos(repo_id,path,created_at) VALUES('short',?,'t')", (str(short_repo),))
+        resolved, _digest = gpuq._validate_entrypoint(self.conn, "short", str(short_repo / "scripts" / "run.ps1"))
+        self.assertEqual(Path(resolved), entry.resolve())
+
     def test_entry_roots_restrict_entrypoint(self):
         other = self.root / "other"
         other.mkdir()
