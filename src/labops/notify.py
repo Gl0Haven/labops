@@ -276,7 +276,7 @@ def _event_notification(conn: sqlite3.Connection, event: sqlite3.Row):
         return {"task_id": task_id, "kind": kind, "text": text}
 
     def actor_name(actor: str) -> str:
-        return {"codex": "Codex", "opus": "Opus", "user": "用户", "labops": "LabOps"}.get(
+        return {"codex": "Codex", "opus": "Opus", "gemini": "Gemini", "user": "用户", "labops": "LabOps"}.get(
             actor, actor[:1].upper() + actor[1:] if actor else "LabOps")
 
     if entity_type == "bg_run" and state in {
@@ -1253,7 +1253,7 @@ def scan_desktop_replies(conn, *, now_ts: str | None = None, process_info=None) 
 
 
 def notify_user(conn, *, actor: str, text: str, request_id: str, now_ts: str | None = None) -> dict:
-    if actor not in ("codex", "opus"):
+    if actor not in ("codex", "opus", "gemini"):
         raise ValidationError("actor_tool_not_allowed")
     if not desktop.REQUEST_ID_RE.fullmatch(request_id):
         raise ValidationError("invalid_request_id")
@@ -1275,7 +1275,7 @@ def notify_user(conn, *, actor: str, text: str, request_id: str, now_ts: str | N
         ).fetchone()[0]
         if count >= AGENT_REPORT_PER_HOUR:
             raise ValidationError("report_rate_limited", detail={"limit": AGENT_REPORT_PER_HOUR})
-        who = {"codex": "Codex", "opus": "Claude"}[actor]
+        who = {"codex": "Codex", "opus": "Claude", "gemini": "Gemini"}[actor]
         conn.execute(
             "INSERT INTO notifications(event_key,task_id,kind,text,status,created_at) "
             "VALUES(?,NULL,'agent_report',?,'PENDING',?)",

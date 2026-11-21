@@ -33,6 +33,10 @@ _ACTOR_TOOLS = {
              "submit_changes", "submit_review", "propose_integration", "query_history", "progress_summary", "search_history", "next_task",
              "queue_list", "queue_register", "queue_cancel", "adopt_process",
              "desktop_list", "desktop_send", "desktop_status", "notify_user"},
+    "gemini": {"get_task_context", "get_handoff", "get_worktree", "start_work", "snapshot", "sync_main",
+               "submit_changes", "submit_review", "propose_integration", "query_history", "progress_summary", "search_history", "next_task",
+               "queue_list", "queue_intent", "queue_register", "queue_cancel", "adopt_process",
+               "desktop_list", "desktop_send", "desktop_status", "notify_user"},
     "secretary": {"get_task_context", "query_history", "progress_summary", "search_history",
                   "queue_list", "queue_intent", "queue_choose", "desktop_list", "desktop_status",
                   "desktop_dispatch"},
@@ -107,10 +111,10 @@ def _dispatch(tool_name: str, args: dict, actor: str):
                     "head_commit": rnd["head_commit"], "dirty_files": dirty_files}
         if tool_name == "start_work":
             task_id, role = args["task_id"], args["role"]
-            allowed_role = "implement" if actor == "codex" else "fix"
-            if role != allowed_role:
+            allowed_roles = {"implement", "fix"} if actor == "gemini" else ({"implement"} if actor == "codex" else {"fix"})
+            if role not in allowed_roles:
                 raise ValidationError("actor_role_not_allowed", detail={"actor": actor, "role": role,
-                                                                          "allowed_role": allowed_role})
+                                                                          "allowed_role": sorted(allowed_roles)[0] if len(allowed_roles) == 1 else sorted(allowed_roles)})
             rnd = open_round(conn, task_id=task_id, actor=actor, role=role)
             _write_log(tool_name, actor, rnd["round_id"])
             worktree = create_worktree(conn, rnd["round_id"])

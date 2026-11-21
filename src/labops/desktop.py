@@ -104,9 +104,9 @@ def _close_codex(client) -> None:
 
 
 def prepare_codex(conn, target, repo_id, marker, codex_connect):
-    if not UUID_RE.fullmatch(target):
+    thread_id = desktop_codex.normalize_thread_target(target)
+    if not UUID_RE.fullmatch(thread_id):
         raise ValidationError("codex_thread_unknown", detail={"reason": "format"})
-    thread_id = target.lower()
     rollout = desktop_codex.find_rollout(_codex_home(), thread_id)
     if rollout is None:
         raise ValidationError("codex_thread_unknown", detail={"reason": "no_rollout"})
@@ -191,7 +191,7 @@ def _row_view(row) -> dict:
 def _replay(row, kind, target, prompt_sha, origin) -> dict:
     detail = json.loads(row["detail_json"])
     matches = (target in (row["target"], detail.get("host_session_id"), detail.get("name")) if kind == "claude"
-               else target.lower() == row["target"])
+               else desktop_codex.normalize_thread_target(target) == row["target"])
     if row["kind"] == kind and row["prompt_sha256"] == prompt_sha and row["origin"] == origin and matches:
         return _row_view(row) | {"replayed": True}
     raise IdempotencyConflict("idempotency_conflict", detail={"request_id": row["request_id"]})
@@ -308,6 +308,7 @@ def _enqueue_relay(conn, row, prompt: str) -> None:
     if row["origin"] == "wechat":
         return
     direction = {"opus": "Claude → Codex" if row["kind"] == "codex" else "Claude → Claude",
+                 "gemini": "Gemini → Codex" if row["kind"] == "codex" else "Gemini → Claude",
                  "codex": "Codex → Claude"}.get(row["actor"])
     if direction is None:
         return

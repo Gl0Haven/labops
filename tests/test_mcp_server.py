@@ -104,11 +104,11 @@ class MCPServerTests(unittest.TestCase):
         from labops import mcp_worker
 
         permissions = {
-            "desktop_list": {"codex", "opus", "secretary"},
-            "desktop_send": {"opus"},
-            "desktop_status": {"opus", "secretary"},
+            "desktop_list": {"codex", "opus", "gemini", "secretary"},
+            "desktop_send": {"opus", "gemini"},
+            "desktop_status": {"opus", "gemini", "secretary"},
             "desktop_dispatch": {"secretary"},
-            "notify_user": {"codex", "opus"},
+            "notify_user": {"codex", "opus", "gemini"},
             "message_claude": {"codex"},
         }
         for name, allowed in permissions.items():
@@ -116,7 +116,7 @@ class MCPServerTests(unittest.TestCase):
                 for registry in (mcp_server._ACTOR_TOOLS, mcp_worker._ACTOR_TOOLS):
                     self.assertEqual({actor for actor, names in registry.items() if name in names}, allowed)
                 self.assertEqual(tuple(signature(getattr(mcp_server, name)).parameters), mcp_worker.TOOLS[name])
-                for actor in {"codex", "opus", "secretary"} - allowed:
+                for actor in {"codex", "opus", "gemini", "secretary"} - allowed:
                     with self.assertRaises(ToolError) as denied:
                         mcp_server._call_worker(name, {}, actor)
                     self.assertEqual(json.loads(str(denied.exception))["message"], "actor_tool_not_allowed")

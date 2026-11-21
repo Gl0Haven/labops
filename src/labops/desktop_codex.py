@@ -1,5 +1,6 @@
 import json
 import queue
+import re
 import struct
 import threading
 import time
@@ -158,8 +159,26 @@ def connect(pipe_path: str) -> IpcClient:
 
 
 def find_rollout(codex_home: Path, thread_id: str) -> Path | None:
-    paths = (codex_home / "sessions").rglob(f"rollout-*-{thread_id}.jsonl")
-    return max(paths, key=lambda path: path.stat().st_mtime, default=None)
+    """Return the rollout file Codex is currently appending to for this thread.
+
+    Long-lived threads are split: older segments are compressed to .jsonl.zst and the active
+    one is named rollout-<ts>-<thread>_<segment>.jsonl. Only uncompressed files can receive new
+    events, so pick the newest of those whose first line names this thread.
+    """
+    name_re = re.compile(rf"^rollout-.+-{re.escape(thread_id)}(?:_[0-9a-f-]{{36}})?\.jsonl$", re.I)
+    candidates = [path for path in (codex_home / "sessions").rglob(f"rollout-*-{thread_id}*.jsonl")
+                  if name_re.fullmatch(path.name)]
+    for path in sorted(candidates, key=lambda item: item.stat().st_mtime, reverse=True):
+        if str(read_session_meta(path).get("id") or "").lower() == thread_id.lower():
+            return path
+    return None
+
+
+def normalize_thread_target(target: str) -> str:
+    """Accept codex://threads/<id> links as well as the bare thread id."""
+    value = target.strip()
+    match = re.match(r"^codex://threads/([^/?#]+)", value, re.I)
+    return (match[1] if match else value).lower()
 
 
 def read_session_meta(path: Path) -> dict:
@@ -180,9 +199,16 @@ def list_threads(codex_home: Path, limit: int) -> list[dict]:
     paths = (codex_home / "sessions").rglob("rollout-*.jsonl")
     recent = sorted(((path.stat().st_mtime, path) for path in paths), key=lambda item: item[0], reverse=True)
     threads = []
-    for modified, path in recent[:limit]:
+    seen = set()
+    for modified, path in recent:
+        if len(threads) >= limit:
+            break
         meta = read_session_meta(path)
-        threads.append({"thread_id": meta.get("id") or path.stem[-36:], "cwd": meta.get("cwd"),
+        thread_id = meta.get("id") or path.stem[-36:]
+        if thread_id in seen:  # a split thread has several segment files; list it once
+            continue
+        seen.add(thread_id)
+        threads.append({"thread_id": thread_id, "cwd": meta.get("cwd"),
                         "cli_version": meta.get("cli_version"),
                         "updated_at": datetime.fromtimestamp(modified, timezone.utc).isoformat().replace("+00:00", "Z")})
     return threads

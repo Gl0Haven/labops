@@ -6,7 +6,7 @@ from .errors import ValidationError
 
 TASK_ID_RE = re.compile(r"^T\d{8}-[a-z0-9][a-z0-9-]{0,39}$")
 REPO_ID_RE = re.compile(r"^[a-z0-9][a-z0-9_-]{0,39}$")
-ACTORS = {"codex", "opus", "user"}
+ACTORS = {"codex", "opus", "gemini", "user"}
 ROLES = {"implement", "fix"}
 ID_PREFIXES = {"op", "cl", "ev", "rv", "ap", "ig", "bk"}
 

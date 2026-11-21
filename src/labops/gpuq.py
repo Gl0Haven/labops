@@ -32,7 +32,7 @@ _GPUQ_TRANSITIONS = {
     "CANCELLED": set(),
 }
 _TERMINAL = {"LAUNCHED", "LAUNCH_FAILED", "CANCELLED"}
-_ACTORS = {"codex", "opus", "secretary", "cli", "labops"}
+_ACTORS = {"codex", "opus", "gemini", "secretary", "cli", "labops"}
 _RUN_PREFIX_RE = re.compile(r"^[a-z0-9][a-z0-9_-]{0,79}$")
 _ALLOWED_ENTRY_ROOTS: tuple[Path, ...] = ()
 _START_RUN_SCRIPT: Path | None = None
@@ -186,7 +186,7 @@ def _insert_draft(conn: sqlite3.Connection, *, repo_id: str, title: str, note: s
 def queue_intent(conn: sqlite3.Connection, *, repo_id: str, title: str, note: str,
                  created_by: str = "secretary") -> dict:
     repo_row(conn, repo_id)
-    if created_by not in {"secretary", "codex", "opus", "cli"}:
+    if created_by not in {"secretary", "codex", "opus", "gemini", "cli"}:
         raise ValidationError("invalid_queue_creator", detail={"created_by": created_by})
     if not isinstance(title, str) or not title.strip() or len(title.strip()) > 200:
         raise ValidationError("invalid_queue_title")
@@ -475,7 +475,7 @@ def queue_register(conn: sqlite3.Connection, *, repo_id: str, title: str, entryp
                    context: str, context_commit: str | None = None, draft_id: str | None = None,
                    run_prefix: str | None = None, created_by: str = "codex",
                    config_paths: list[str] | None = None) -> dict:
-    if created_by not in {"codex", "opus", "cli"}:
+    if created_by not in {"codex", "opus", "gemini", "cli"}:
         raise ValidationError("queue_register_actor_not_allowed", detail={"created_by": created_by})
     if not isinstance(title, str) or not title.strip() or len(title.strip()) > 200:
         raise ValidationError("invalid_queue_title")
@@ -528,7 +528,7 @@ def queue_register(conn: sqlite3.Connection, *, repo_id: str, title: str, entryp
 
 
 def queue_cancel(conn: sqlite3.Connection, *, queue_id: str, reason: str, actor: str = "codex") -> dict:
-    if actor not in {"codex", "opus", "cli"}:
+    if actor not in {"codex", "opus", "gemini", "cli"}:
         raise ValidationError("queue_cancel_actor_not_allowed", detail={"actor": actor})
     if not isinstance(reason, str) or not reason.strip():
         raise ValidationError("queue_cancel_reason_required")

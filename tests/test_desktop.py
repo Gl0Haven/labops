@@ -542,3 +542,29 @@ class DesktopTests(unittest.TestCase):
                    if json.loads(frame[4:])["type"] == "client-discovery-response"]
         self.assertEqual(answers, [{"type": "client-discovery-response", "requestId": "probe-new",
                                     "response": {"canHandle": False}}])
+
+    def test_find_rollout_uses_active_suffixed_segment_of_split_thread(self):
+        # Live 2026-11-21: a long-lived thread had its old segment compressed to .jsonl.zst and kept
+        # writing to rollout-<ts>-<thread>_<segment>.jsonl, so find_rollout returned None.
+        home = self.fixture.codex_home
+        old = self.fixture.rollout
+        compressed = old.with_name(old.name + ".zst")
+        old.rename(compressed)
+        segment = (home / "sessions" / "2026" / "11" / "19"
+                   / f"rollout-2026-11-19T08-00-00-{THREAD_ID}_01a1bf77-6221-70b2-940a-0c5459993114.jsonl")
+        segment.parent.mkdir(parents=True)
+        append_jsonl(segment, {"type": "session_meta", "payload": {"id": THREAD_ID, "cwd": "x", "cli_version": "f"}})
+        other = segment.with_name(f"rollout-2026-11-19T09-00-00-{THREAD_ID}_ffffffff-0000-0000-0000-000000000000.jsonl")
+        append_jsonl(other, {"type": "session_meta", "payload": {"id": "someone-else", "cwd": "x"}})
+        os.utime(other, (segment.stat().st_mtime + 10,) * 2)
+        self.assertEqual(codex.find_rollout(home, THREAD_ID), segment)
+        listed = [row["thread_id"] for row in codex.list_threads(home, 10)]
+        self.assertEqual(listed.count(THREAD_ID), 1)
+
+    def test_codex_target_accepts_codex_thread_link_and_replays_with_bare_id(self):
+        fake = FakeCodexStream()
+        link = f"codex://threads/{THREAD_ID.upper()}"
+        result = self.fixture.send("codex", target=link, codex_connect=lambda _: codex.IpcClient(fake))
+        self.assertEqual((result["target"], result["state"]), (THREAD_ID, "SENT"))
+        replayed = self.fixture.send("codex", target=THREAD_ID, codex_connect=self.fail)
+        self.assertTrue(replayed["replayed"])

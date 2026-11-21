@@ -97,7 +97,8 @@ def handoff_data(conn: sqlite3.Connection, round_id: str) -> dict:
                    if rnd["head_commit"] else []},
         "prior_findings": _prior_findings(conn, task["task_id"], rnd["n"]),
         "self_reported": _self_reported(conn, rnd),
-        "next": {"suggested_actor": "opus" if rnd["actor"] == "codex" else "user", "suggested_role": "code_review"},
+        "next": {"suggested_actor": "opus" if rnd["actor"] == "codex" else ("codex" if rnd["actor"] == "gemini" else "user"),
+                 "suggested_role": "code_review"},
     }
 
 

@@ -626,7 +626,7 @@ def _adopted_run_for_identity(conn: sqlite3.Connection, pid: int, process_starte
 def adopt_process(conn: sqlite3.Connection, *, repo_id: str, pid: int, title: str,
                   log_path: str | None = None, watch_globs: list[str] | None = None,
                   actor: str) -> dict:
-    if actor not in {"codex", "opus", "cli"}:
+    if actor not in {"codex", "opus", "gemini", "cli"}:
         raise ValidationError("adopt_actor_not_allowed", detail={"actor": actor})
     if isinstance(pid, bool) or not isinstance(pid, int) or pid <= 0:
         raise ValidationError("invalid_process_pid", detail={"pid": pid})

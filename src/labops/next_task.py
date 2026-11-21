@@ -29,17 +29,25 @@ def _result(conn: sqlite3.Connection, action: str, task, **fields) -> dict:
     return {"action": action, **fields, "handoff": handoff, "context_ref": task["task_id"]}
 
 
-def _codex_next(conn: sqlite3.Connection):
+def _open_round_next(conn: sqlite3.Connection, actor: str):
     row = conn.execute(
         "SELECT t.task_id,t.brief,t.created_at,r.round_id,r.worktree_path "
         "FROM rounds r JOIN tasks t ON t.task_id=r.task_id JOIN repos p ON p.repo_id=t.repo_id "
-        "WHERE r.state='OPEN' AND r.actor='codex' AND r.worktree_path IS NOT NULL "
+        "WHERE r.state='OPEN' AND r.actor=? AND r.worktree_path IS NOT NULL "
         "AND (p.trusted_for_exec=1 OR p.repo_id='labops') "
-        "ORDER BY t.created_at,t.task_id,r.n LIMIT 1"
+        "ORDER BY t.created_at,t.task_id,r.n LIMIT 1",
+        (actor,),
     ).fetchone()
     if row is not None:
         return _result(conn, "continue_round", row, round_id=row["round_id"],
                        worktree_path=row["worktree_path"])
+    return None
+
+
+def _codex_next(conn: sqlite3.Connection, *, actor: str = "codex"):
+    selected = _open_round_next(conn, actor)
+    if selected is not None:
+        return selected
 
     for task in _trusted_tasks(conn, "ACTIVE"):
         latest_round = conn.execute(
@@ -101,8 +109,23 @@ def _opus_next(conn: sqlite3.Connection):
     return None
 
 
+def _gemini_next(conn: sqlite3.Connection):
+    selected = _open_round_next(conn, "gemini")
+    if selected is not None:
+        return selected
+    selected = _opus_next(conn)
+    if selected is not None:
+        return selected
+    return _codex_next(conn, actor="gemini")
+
+
 def next_task(conn: sqlite3.Connection, actor: str) -> dict:
-    if actor not in {"codex", "opus"}:
+    if actor not in {"codex", "opus", "gemini"}:
         raise ValidationError("invalid_actor", detail={"actor": actor})
-    selected = _codex_next(conn) if actor == "codex" else _opus_next(conn)
+    if actor == "codex":
+        selected = _codex_next(conn)
+    elif actor == "opus":
+        selected = _opus_next(conn)
+    else:
+        selected = _gemini_next(conn)
     return selected if selected is not None else {"action": "idle"}
